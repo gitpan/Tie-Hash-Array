@@ -1,0 +1,5 @@
+Revision history for Perl module Tie::Hash::Array
+
+0.01 Mon Dec 02 14:30:00 2002
+	- original version; created with kind assistance from
+	  ExtUtils::ModuleMaker 0.31229
