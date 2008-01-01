@@ -1,12 +1,6 @@
-#!/usr/bin/perl -Tw
+#!perl -Tw
 
 use strict;
-use Test::More tests => 4;
-
-BEGIN { use_ok 'Tie::Hash::Array' }					# test
-
-tie my %tied_hash, 'Tie::Hash::Array';
-isa_ok tied %tied_hash, 'Tie::Hash::Array';				# test
 
 sub randomstring() {
     my $string = '';
@@ -14,11 +8,25 @@ sub randomstring() {
     $string;
 }
 
-my @testdata;
-push @testdata, randomstring for 1 .. 42;
-%tied_hash = @testdata;
-my %norm_hash = @testdata;
+my %norm_hash;
+BEGIN { %norm_hash = map randomstring(), 1 .. int 2410 * rand() << 1 }
 
-ok eq_hash \%tied_hash, \%norm_hash, 'hash content';			# test
-is join ( '', keys %tied_hash ), join ( '', sort keys %norm_hash ),
-  'order of keys'							# Test
+use Test::More tests => 4 + 3 * keys %norm_hash;
+
+BEGIN { use_ok 'Tie::Hash::Array' }					# test
+
+tie my %tied_hash, 'Tie::Hash::Array';
+isa_ok tied %tied_hash, 'Tie::Hash::Array';				# test
+
+%tied_hash = %norm_hash;
+my @sorted_keys = sort keys %norm_hash;
+
+ok eq_hash( \%tied_hash, \%norm_hash ), 'hash content';			# test
+is "@{[ keys %tied_hash ]}", "@sorted_keys", 'order of keys';		# test
+
+for (@sorted_keys) {
+    my( $key, $value ) = each %tied_hash;
+    is $key, $_, 'keys while deleting';					# tests
+    is $value, $norm_hash{$_}, 'values from each()';			# tests
+    is delete $tied_hash{$_}, $norm_hash{$_}, 'values while deleting';	# tests
+}

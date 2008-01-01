@@ -42,42 +42,12 @@ maintain stable, or else you might get undesired results.)
 
 =back
 
-=head1 SUBCLASSING
-
-Please do not rely on the implementation details of this class for now,
-since they may still be subject to change.
-
-If you'd like to subclass this module, please let me know;
-perhaps we can agree on some standards then.
-
-=head1 BUGS
-
-None known so far.
-
-=head1 AUTHOR
-
-	Martin H. Sluka
-	mailto:martin@sluka.de
-	http://martin.sluka.de/
-
-=head1 COPYRIGHT
-
-This program is free software; you can redistribute
-it and/or modify it under the same terms as Perl itself.
-
-The full text of the license can be found in the
-LICENSE file included with this module.
-
-=head1 SEE ALSO
-
-L<Tie::Hash::Abbrev>
-
 =cut
 
 use strict;
 use vars '$VERSION';
 
-$VERSION = 0.01;
+$VERSION = 0.10;
 
 sub TIEHASH {
     my $package = shift;
@@ -98,7 +68,7 @@ sub STORE {
     if ( defined $self->exact( $key, my $pos = $self->pos($key) ) ) {
         $self->[ $pos + 1 ] = $value;
     }
-    else { splice @$self, $pos, 0, $key, $value }
+    else { $self->splice( $pos, 0, $key, $value ) }
 }
 
 sub EXISTS {
@@ -108,12 +78,13 @@ sub EXISTS {
     ( 2 + $pos2 - $pos ) >> 1;
 }
 
+my %i;
+
 sub DELETE {
     my ( $self, $key ) = @_;
     my $pos = $self->pos($key);
     if ( defined $self->exact( $key, $pos ) ) {
-        ( undef, my $value ) = splice @$self, $pos, 2;
-        $self->startover;
+        ( undef, my $value ) = $self->splice( $pos, 2 );
         $value;
     }
     else { undef }
@@ -121,11 +92,9 @@ sub DELETE {
 
 sub CLEAR {
     my ($self) = @_;
-    $self->startover;
+    delete $i{$self};
     @$self = ();
 }
-
-my %i;
 
 sub FIRSTKEY {
     my ($self) = @_;
@@ -134,17 +103,17 @@ sub FIRSTKEY {
 }
 
 sub NEXTKEY {
-    my ( $self, $lastkey ) = @_;
+    my ($self) = @_;
     if ( ( my $i = $i{$self} += 2 ) < $#$self ) { $self->[$i] }
     else {
-        $self->startover;
+        delete $i{$self};
         undef;
     }
 }
 
 sub UNTIE { }
 
-sub DESTROY { shift->startover }
+sub DESTROY { delete $i{+shift} }
 
 sub exact {
     my ( $self, $key, $pos ) = @_;
@@ -163,11 +132,93 @@ sub pos {
     $a;
 }
 
-sub startover {
-    my ($self) = @_;
-    delete $i{$self};
+sub splice {
+    my ( $self, $pos, $length, @values ) = @_;
+    if ( defined $i{$self} ) {
+        $i{$self} -= $length if $pos <= $i{$self};
+        $i{$self} += @values if $pos < $i{$self};
+    }
+    splice @$self, $pos, $length, @values;
 }
 
 *valid = \&exact;
+
+=head1 ADDITIONAL METHODS
+
+=head2 split_at
+
+  my %smaller = tied(%hash)->split_at('foo');
+
+will delete all keys from C<%hash> which are asciibetically smaller than "foo"
+(which needs not exist as a key itself) and return a list of the deleted keys
+and values.
+
+=cut
+
+sub split_at {
+    my ( $self, $key ) = @_;
+    defined( my $pos = delete $i{$self} ) or return;
+    $self->splice( 0, $self->pos($key) );
+}
+
+=head1 SUBCLASSING
+
+Please do not rely on the implementation details of this class for now,
+since they may still be subject to change.
+
+If you'd like to subclass this module, please let me know;
+perhaps we can agree on some standards then.
+
+=head1 AUTHOR
+
+	Martin H. Sluka
+	mailto:perl@sluka.de
+	http://martin.sluka.de/
+
+=head1 BUGS
+
+None known so far.
+
+=head1 SUPPORT
+
+You can find documentation for this module with the perldoc command.
+
+    perldoc Tie::Hash::Array
+
+You can also look for information at:
+
+=over 4
+
+=item * RT: CPAN's request tracker
+
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Tie-Hash-Array>
+
+=item * AnnoCPAN: Annotated CPAN documentation
+
+L<http://annocpan.org/dist/Tie-Hash-Array>
+
+=item * CPAN Ratings
+
+L<http://cpanratings.perl.org/d/Tie-Hash-Array>
+
+=item * Search CPAN
+
+L<http://search.cpan.org/dist/Tie-Hash-Array>
+
+=back
+
+=head1 COPYRIGHT & LICENCE
+
+This program is free software; you can redistribute
+it and/or modify it under the same terms as Perl itself.
+
+The full text of the license can be found in the
+LICENSE file included with this module.
+
+=head1 SEE ALSO
+
+L<Tie::Hash::Abbrev>
+
+=cut
 
 1

@@ -45,7 +45,7 @@ None known so far.
 =head1 AUTHOR
 
 	Martin H. Sluka
-	mailto:martin@sluka.de
+	mailto:perl@sluka.de
 	http://martin.sluka.de/
 
 =head1 COPYRIGHT

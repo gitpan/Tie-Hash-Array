@@ -43,7 +43,7 @@ use strict;
 use vars '$VERSION';
 use base 'Tie::Hash::Array';
 
-$VERSION = 0.01;
+$VERSION = 0.10;
 
 =head1 ADDITIONAL METHODS
 
@@ -64,9 +64,8 @@ sub delete_abbrev {
         next
           unless
           defined( my $pos1 = $self->valid( $_, my $pos = $self->pos($_) ) );
-        $self->startover;
         my $i = 0;
-        push @deleted, grep $i++ & 1, splice @$self, $pos, 2 + $pos1 - $pos;
+        push @deleted, grep $i++ & 1, $self->splice( $pos, 2 + $pos1 - $pos );
     }
     @deleted
 }
@@ -103,10 +102,10 @@ None known so far.
 =head1 AUTHOR
 
 	Martin H. Sluka
-	mailto:martin@sluka.de
+	mailto:perl@sluka.de
 	http://martin.sluka.de/
 
-=head1 COPYRIGHT
+=head1 COPYRIGHT & LICENCE
 
 This program is free software; you can redistribute
 it and/or modify it under the same terms as Perl itself.
